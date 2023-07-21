@@ -8,13 +8,16 @@ import android.view.ViewGroup
 
 import androidx.recyclerview.widget.RecyclerView
 import com.example.mychat.databinding.ItemConteinerUserBinding
+import com.example.mychat.listeners.UserListener
 import com.example.mychat.models.User
 
 class UsersAdapter : RecyclerView.Adapter<UsersAdapter.UserViewHolder> {
     private var users: List<User>
+    private var userListener: UserListener
 
-    constructor(user: List<User>) {
+    constructor(user: List<User>, userListener: UserListener) {
         this.users = user
+        this.userListener = userListener
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserViewHolder {
@@ -32,13 +35,16 @@ class UsersAdapter : RecyclerView.Adapter<UsersAdapter.UserViewHolder> {
         return users.size
     }
 
-    class UserViewHolder(private val binding: ItemConteinerUserBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class UserViewHolder(private val binding: ItemConteinerUserBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun setUserData(user: User)
         {
             binding.textName.setText(user.name).toString()
             binding.textEmail.setText(user.email).toString()
             binding.imageProfile.setImageBitmap(getUserImage(user.image))
+            binding.root.setOnClickListener{
+                userListener.onUserClicked(user)
+            }
         }
 
         private fun getUserImage(encodedImage:String): Bitmap
