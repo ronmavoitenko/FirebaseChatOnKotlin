@@ -32,7 +32,7 @@ class ChatActivity : AppCompatActivity() {
 
     private fun loadReceiverDetails()
     {
-        val receiverUser = intent.customGetSerializable<User>(Constants.KEY_USER)
+        receiverUser = intent.customGetSerializable<User>(Constants.KEY_USER)!!
         binding.textName.text = receiverUser?.name
     }
 
