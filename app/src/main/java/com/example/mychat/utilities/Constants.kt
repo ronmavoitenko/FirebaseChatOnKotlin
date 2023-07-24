@@ -12,5 +12,10 @@ class Constants {
         const val KEY_IMAGE: String = "image"
         const val KEY_FCM_TOKEN:String = "fcmToken"
         const val KEY_USER: String = "user"
+        const val KEY_COLLECTION_CHAT = "chat"
+        const val KEY_SENDER_ID = "senderId"
+        const val KEY_RECEIVED_ID = "receivedId"
+        const val KEY_MESSAGE = "message"
+        const val KEY_TIMESTAMP = "timestamp"
     }
 }

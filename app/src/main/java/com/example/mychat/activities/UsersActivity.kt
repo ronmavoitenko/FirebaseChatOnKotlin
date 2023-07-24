@@ -63,6 +63,7 @@ class UsersActivity : AppCompatActivity(), UserListener {
                         user.email = queryDocumentSnapshot.getString(Constants.KEY_EMAIL).toString()
                         user.image = queryDocumentSnapshot.getString(Constants.KEY_IMAGE).toString()
                         user.token = queryDocumentSnapshot.getString(Constants.KEY_FCM_TOKEN).toString()
+                        user.id = queryDocumentSnapshot.id
                         users.add(user)
                     }
                     if(users.size > 0)
