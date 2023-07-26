@@ -8,4 +8,7 @@ class ChatMessage {
     var message:String = ""
     var dataTime:String = ""
     lateinit var dateObject: Date
+    var conversionId:String = ""
+    var conversionName:String = ""
+    var conversionImage:String = ""
 }

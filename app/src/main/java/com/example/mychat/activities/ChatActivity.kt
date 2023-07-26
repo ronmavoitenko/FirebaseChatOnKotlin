@@ -14,7 +14,10 @@ import com.example.mychat.models.ChatMessage
 import com.example.mychat.models.User
 import com.example.mychat.utilities.Constants
 import com.example.mychat.utilities.PreferenceManager
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
@@ -31,6 +34,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var chatAdapter: ChatAdapter
     private lateinit var preferenceManager: PreferenceManager
     private lateinit var database: FirebaseFirestore
+    private var conversionId: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityChatBinding.inflate(layoutInflater)
@@ -57,10 +61,27 @@ class ChatActivity : AppCompatActivity() {
     {
         val message = hashMapOf<String, Any>()
         message[Constants.KEY_SENDER_ID] = preferenceManager.getString(Constants.KEY_USER_ID)
-        message[Constants.KEY_RECEIVED_ID] = receiverUser.id
+        message[Constants.KEY_RECEIVER_ID] = receiverUser.id
         message[Constants.KEY_MESSAGE] = binding.inputMessage.text.toString()
         message[Constants.KEY_TIMESTAMP] = Date()
         database.collection(Constants.KEY_COLLECTION_CHAT).add(message)
+        if(conversionId != null)
+        {
+            updateConversion(binding.inputMessage.text.toString())
+        }
+        else
+        {
+            val conversion = HashMap<String, Any>()
+            conversion[Constants.KEY_SENDER_ID] = preferenceManager.getString(Constants.KEY_USER_ID)
+            conversion[Constants.KEY_SENDER_NAME] = preferenceManager.getString(Constants.KEY_NAME)
+            conversion[Constants.KEY_SENDER_IMAGE] = preferenceManager.getString(Constants.KEY_IMAGE)
+            conversion[Constants.KEY_RECEIVER_ID] = receiverUser.id
+            conversion[Constants.KEY_RECEIVER_NAME] = receiverUser.name
+            conversion[Constants.KEY_RECEIVER_IMAGE] = receiverUser.image
+            conversion[Constants.KEY_LAST_MESSAGE] = binding.inputMessage.text.toString()
+            conversion[Constants.KEY_TIMESTAMP] = Date()
+            addConversion(conversion)
+        }
         binding.inputMessage.text = null
     }
 
@@ -68,11 +89,11 @@ class ChatActivity : AppCompatActivity() {
     {
         database.collection(Constants.KEY_COLLECTION_CHAT)
             .whereEqualTo(Constants.KEY_SENDER_ID, preferenceManager.getString(Constants.KEY_USER_ID))
-            .whereEqualTo(Constants.KEY_RECEIVED_ID, receiverUser.id)
+            .whereEqualTo(Constants.KEY_RECEIVER_ID, receiverUser.id)
             .addSnapshotListener(eventListener)
         database.collection(Constants.KEY_COLLECTION_CHAT)
             .whereEqualTo(Constants.KEY_SENDER_ID, receiverUser.id)
-            .whereEqualTo(Constants.KEY_RECEIVED_ID, preferenceManager.getString(Constants.KEY_USER_ID))
+            .whereEqualTo(Constants.KEY_RECEIVER_ID, preferenceManager.getString(Constants.KEY_USER_ID))
             .addSnapshotListener(eventListener)
     }
 
@@ -87,7 +108,7 @@ class ChatActivity : AppCompatActivity() {
                 {
                     val chatMessage = ChatMessage()
                     chatMessage.senderId = documentChange.document.getString(Constants.KEY_SENDER_ID).toString()
-                    chatMessage.receivedId = documentChange.document.getString(Constants.KEY_RECEIVED_ID).toString()
+                    chatMessage.receivedId = documentChange.document.getString(Constants.KEY_RECEIVER_ID).toString()
                     chatMessage.message = documentChange.document.getString(Constants.KEY_MESSAGE).toString()
                     chatMessage.dataTime = getReadableDateTime(documentChange.document.getDate(Constants.KEY_TIMESTAMP)!!)
                     chatMessage.dateObject = documentChange.document.getDate(Constants.KEY_TIMESTAMP)!!
@@ -107,6 +128,10 @@ class ChatActivity : AppCompatActivity() {
             binding.chatRecyclerView.visibility = View.VISIBLE
         }
         binding.progressBar.visibility = View.GONE
+        if(conversionId == null)
+        {
+            checkForConversion()
+        }
     }
 
     private fun getBitmapFromEncodedString(encodedImage: String): Bitmap
@@ -143,5 +168,55 @@ class ChatActivity : AppCompatActivity() {
     private fun getReadableDateTime(date: Date): String
     {
         return SimpleDateFormat("MMMM dd, yyyy - hh:mm a", Locale.getDefault()).format(date)
+    }
+
+    private fun addConversion(conversion: HashMap<String, Any>)
+    {
+        database.collection(Constants.KEY_COLLECTION_CONVERSATIONS)
+            .add(conversion)
+            .addOnSuccessListener{documentreference ->
+                conversionId = documentreference.id
+            }
+    }
+
+    private fun updateConversion(message: String)
+    {
+        val documentReference: DocumentReference = database.collection(Constants.KEY_COLLECTION_CONVERSATIONS).document(conversionId!!)
+        documentReference.update(
+            Constants.KEY_LAST_MESSAGE, message,
+            Constants.KEY_TIMESTAMP, Date()
+        )
+    }
+
+    private fun checkForConversion()
+    {
+        if(chatMessages.size != 0)
+        {
+            checkForConversionRemotely(
+                preferenceManager.getString(Constants.KEY_USER_ID),
+                receiverUser.id
+            )
+            checkForConversionRemotely(
+                receiverUser.id,
+                preferenceManager.getString(Constants.KEY_USER_ID)
+            )
+        }
+    }
+
+    private fun checkForConversionRemotely(senderId: String, receiverId: String)
+    {
+        database.collection(Constants.KEY_COLLECTION_CONVERSATIONS)
+            .whereEqualTo(Constants.KEY_SENDER_ID, senderId)
+            .whereEqualTo(Constants.KEY_RECEIVER_ID, receiverId)
+            .get()
+            .addOnCompleteListener(conversionOnCompleteListener)
+    }
+
+    private var conversionOnCompleteListener = OnCompleteListener<QuerySnapshot> { task ->
+        if(task.isSuccessful && task.result != null && task.result.documents.size > 0)
+        {
+            val documentSnapshot: DocumentSnapshot = task.result.documents[0]
+            conversionId = documentSnapshot.id
+        }
     }
 }
