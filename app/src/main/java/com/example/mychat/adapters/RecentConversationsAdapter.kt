@@ -7,9 +7,13 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.mychat.databinding.ItemConteinerRecentConversionBinding
+import com.example.mychat.listeners.ConversionListener
 import com.example.mychat.models.ChatMessage
+import com.example.mychat.models.User
 
-class RecentConversationsAdapter(private val chatMessage: List<ChatMessage>) : RecyclerView.Adapter<RecentConversationsAdapter.ConversionViewHolder>(){
+class RecentConversationsAdapter(
+    private val chatMessage: List<ChatMessage>,
+    private val conversionListener: ConversionListener) : RecyclerView.Adapter<RecentConversationsAdapter.ConversionViewHolder>(){
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ConversionViewHolder {
         return  ConversionViewHolder(
@@ -37,6 +41,13 @@ class RecentConversationsAdapter(private val chatMessage: List<ChatMessage>) : R
             binding.imageProfile.setImageBitmap(getConversionImage(chatMessage.conversionImage))
             binding.textName.text = chatMessage.conversionName
             binding.textRecentMessage.text = chatMessage.message
+            binding.root.setOnClickListener {
+                val user = User()
+                user.id = chatMessage.conversionId
+                user.name = chatMessage.conversionName
+                user.image = chatMessage.conversionImage
+                conversionListener.onConversionClicked(user)
+            }
         }
     }
 
